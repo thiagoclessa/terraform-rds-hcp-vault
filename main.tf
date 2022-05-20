@@ -8,25 +8,40 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "2.77.0"
 
-  name                 = "education"
+  name                 = "dap-vpc"
   cidr                 = "10.0.0.0/16"
   azs                  = data.aws_availability_zones.available.names
   public_subnets       = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
   enable_dns_hostnames = true
   enable_dns_support   = true
+  tags = {
+    name = "${var.prefix}-dapvpc-${var.region}"
+    owner = var.prefix
+    region = var.hashi-region
+    purpose = var.purpose
+    ttl = var.ttl
+    Department = var.Department
+    Billable = var.Billable
+  }
 }
 
-resource "aws_db_subnet_group" "education" {
-  name       = "education"
+resource "aws_db_subnet_group" "dap-vpc" {
+  name       = "dap-db-subnet-group"
   subnet_ids = module.vpc.public_subnets
 
   tags = {
-    Name = "Education"
+    name = "${var.prefix}-dbsubnetgroup-${var.region}"
+    owner = var.prefix
+    region = var.hashi-region
+    purpose = var.purpose
+    ttl = var.ttl
+    Department = var.Department
+    Billable = var.Billable
   }
 }
 
 resource "aws_security_group" "rds" {
-  name   = "education_rds"
+  name   = "dap_rds"
   vpc_id = module.vpc.vpc_id
 
   ingress {
@@ -44,7 +59,13 @@ resource "aws_security_group" "rds" {
   }
 
   tags = {
-    Name = "education_rds"
+    name = "${var.prefix}-dbsecgroup-${var.region}"
+    owner = var.prefix
+    region = var.hashi-region
+    purpose = var.purpose
+    ttl = var.ttl
+    Department = var.Department
+    Billable = var.Billable
   }
 }
 
@@ -55,6 +76,15 @@ resource "aws_db_parameter_group" "education" {
   parameter {
     name  = "log_connections"
     value = "1"
+  }
+  tags = {
+    name = "${var.prefix}-rdsdbparameters-${var.region}"
+    owner = var.prefix
+    region = var.hashi-region
+    purpose = var.purpose
+    ttl = var.ttl
+    Department = var.Department
+    Billable = var.Billable
   }
 }
 
