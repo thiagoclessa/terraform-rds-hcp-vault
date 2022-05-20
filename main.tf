@@ -69,8 +69,8 @@ resource "aws_security_group" "rds" {
   }
 }
 
-resource "aws_db_parameter_group" "education" {
-  name   = "education"
+resource "aws_db_parameter_group" "dap-education" {
+  name   = "dap-education"
   family = "postgres13"
 
   parameter {
@@ -98,7 +98,7 @@ resource "aws_db_instance" "education" {
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.dap-edu.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  parameter_group_name   = aws_db_parameter_group.education.name
+  parameter_group_name   = aws_db_parameter_group.dap-education.name
   publicly_accessible    = true
   skip_final_snapshot    = true
 }
