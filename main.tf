@@ -1,3 +1,63 @@
+provider "vault" {
+  # HCP Vault Configuration options
+  address = var.vault_address
+  namespace = var.vault_namespace
+  auth_login {
+    path = "auth/userpass/login/${var.login_username}"
+    namespace = var.vault_namespace
+    
+    parameters = {
+      password = var.login_password
+    }
+  } 
+}
+
+resource "vault_mount" "db" {
+  path = "postgres"
+  type = "database"
+}
+
+resource "vault_database_secrets_mount" "db" {
+  path = "db"
+
+  postgresql {
+    name              = "postgres"
+    username          = aws_db_instance.dap-education.username
+    password      = var.db_password
+    #host       = aws_db_instance.education.address
+    #port          = aws_db_instance.education.port
+    connection_url    = "postgresql://{{username}}:{{password}}@${aws_db_instance.dap-education.address}:${aws_db_instance.dap-education.port}/postgres?sslmode=disable"
+    verify_connection = true
+    allowed_roles = [
+      "dev2","readWrite","readOnly"
+    ]
+  }
+}
+
+resource "vault_database_secret_backend_role" "readOnly" {
+  name    = "readOnly"
+  default_ttl = 900
+  max_ttl = 2700
+  backend = vault_database_secrets_mount.db.path
+  db_name = vault_database_secrets_mount.db.postgresql[0].name
+  creation_statements = [
+    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+  ]
+}
+
+resource "vault_database_secret_backend_role" "readWrite" {
+  name    = "readWrite"
+  default_ttl = 600
+  max_ttl = 1200
+  backend = vault_database_secrets_mount.db.path
+  db_name = vault_database_secrets_mount.db.postgresql[0].name
+  creation_statements = [
+    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+    "GRANT ALL ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+  ]
+}
+
 provider "aws" {
   region = var.region
 }
@@ -15,7 +75,7 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    name = "${var.prefix}-dapvpc-${var.region}"
+    name = "dap-vpc"
     owner = var.prefix
     region = var.hashi-region
     purpose = var.purpose
@@ -30,7 +90,7 @@ resource "aws_db_subnet_group" "dap-edu" {
   subnet_ids = module.vpc.public_subnets
 
   tags = {
-    name = "${var.prefix}-dbsubnetgroup-${var.region}"
+    name = "dap-dbsubnetgroup"
     owner = var.prefix
     region = var.hashi-region
     purpose = var.purpose
@@ -59,7 +119,7 @@ resource "aws_security_group" "rds" {
   }
 
   tags = {
-    name = "${var.prefix}-dbsecgroup-${var.region}"
+    name = "dap-dbsecgroup"
     owner = var.prefix
     region = var.hashi-region
     purpose = var.purpose
@@ -78,7 +138,7 @@ resource "aws_db_parameter_group" "dap-education" {
     value = "1"
   }
   tags = {
-    name = "${var.prefix}-rdsdbparameters-${var.region}"
+    name = "dap-rdsdbparameters"
     owner = var.prefix
     region = var.hashi-region
     purpose = var.purpose
@@ -88,13 +148,13 @@ resource "aws_db_parameter_group" "dap-education" {
   }
 }
 
-resource "aws_db_instance" "education" {
-  identifier             = "education"
+resource "aws_db_instance" "dap-education" {
+  identifier             = "dap-education"
   instance_class         = "db.t3.micro"
   allocated_storage      = 5
   engine                 = "postgres"
   engine_version         = "13.1"
-  username               = "edu"
+  username               = "rootedu"
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.dap-edu.name
   vpc_security_group_ids = [aws_security_group.rds.id]
