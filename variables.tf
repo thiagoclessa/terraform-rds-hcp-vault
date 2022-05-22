@@ -39,8 +39,32 @@ variable "ttl" {
 
 variable "Department" {
   description = "the department the resource is for"
+  default = "test"
     }
 
 variable "Billable" {
   description = "to bill or not to bill"
+  default = "no"
   }
+
+variable "vault_address" {
+    description = "url to use to access vault"
+  }
+
+variable "vault_add_address" {
+    description = "will add vault_address to env var VAULT_ADDR if set to true"
+    default = true
+  }
+
+variable "vault_namespace" {
+    description = "namespace to use"
+    default = "/admin"
+}
+
+variable "login_username" {
+    description = "auth username"
+}
+
+variable "login_password" {
+    description = "auth password"
+}
