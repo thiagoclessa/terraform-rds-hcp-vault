@@ -153,7 +153,7 @@ resource "aws_db_instance" "dap-education" {
   instance_class         = "db.t3.micro"
   allocated_storage      = 5
   engine                 = "postgres"
-  engine_version.       = "13.7"
+  engine_version       = "13.7"
   username               = "rootedu"
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.dap-edu.name
