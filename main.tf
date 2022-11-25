@@ -69,6 +69,17 @@ resource "vault_generic_secret" "example-kv-update" {
 EOT
 }
 
+resource "vault_generic_secret" "example-kv-v2-update" {
+  path = "kv-v2/app_info"
+
+  data_json = <<EOT
+{
+  "username":   "tfc-updated",
+  "password": "new-from-tfc"
+}
+EOT
+}
+
 provider "aws" {
   region = var.region
 }
