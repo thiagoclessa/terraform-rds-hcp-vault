@@ -58,6 +58,17 @@ resource "vault_database_secret_backend_role" "readWrite" {
   ]
 }
 
+resource "vault_generic_secret" "example-kv-update" {
+  path = "kv/app_info"
+
+  data_json = <<EOT
+{
+  "username":   "tfc-updated",
+  "password": "new-from-tfc"
+}
+EOT
+}
+
 provider "aws" {
   region = var.region
 }
