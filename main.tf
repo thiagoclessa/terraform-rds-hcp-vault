@@ -24,9 +24,7 @@ resource "vault_database_secrets_mount" "db" {
     name              = "postgres"
     username          = aws_db_instance.dap-education.username
     password      = var.db_password
-    #host       = aws_db_instance.education.address
-    #port          = aws_db_instance.education.port
-    connection_url    = "postgresql://{{username}}:{{password}}@${aws_db_instance.dap-education.address}:${aws_db_instance.dap-education.port}/postgres?sslmode=disable"
+    connection_url    = "postgresql://{{username}}:{{password}}@${aws_db_instance.RDS_VKPR}:${aws_db_instance.RDS_VKPR.port}/postgres?sslmode=disable"
     verify_connection = true
     allowed_roles = [
       "dev2","readWrite","readOnly"
@@ -80,107 +78,17 @@ resource "vault_generic_secret" "example-kv-v2-update" {
 EOT
 }
 
-provider "aws" {
-  region = var.region
-}
-
-data "aws_availability_zones" "available" {}
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "2.77.0"
-
-  name                 = "dap-vpc"
-  cidr                 = "10.0.0.0/16"
-  azs                  = data.aws_availability_zones.available.names
-  public_subnets       = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-  tags = {
-    name = "dap-vpc"
-    owner = var.prefix
-    region = var.hashi-region
-    purpose = var.purpose
-    ttl = var.ttl
-    Department = var.Department
-    Billable = var.Billable
+resource "aws_db_instance" "RDS_VKPR" {
+    allocated_storage = var.allocated_storage
+    engine = var.engine
+    engine_version = var.engine_version
+    instance_class = var.instance_class
+    db_name = var.dbname
+    username = var.username
+    password = var.password
+    skip_final_snapshot = var.skip_final_snapshot
+    final_snapshot_identifier = "${var.dbname}-snapshot"
+    tags = {
+    name = "VKPR-RDS"
   }
-}
-
-resource "aws_db_subnet_group" "dap-edu" {
-  name       = "dap-db-subnet-group"
-  subnet_ids = module.vpc.public_subnets
-
-  tags = {
-    name = "dap-dbsubnetgroup"
-    owner = var.prefix
-    region = var.hashi-region
-    purpose = var.purpose
-    ttl = var.ttl
-    Department = var.Department
-    Billable = var.Billable
-  }
-}
-
-resource "aws_security_group" "rds" {
-  name   = "dap_rds"
-  vpc_id = module.vpc.vpc_id
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    name = "dap-dbsecgroup"
-    owner = var.prefix
-    region = var.hashi-region
-    purpose = var.purpose
-    ttl = var.ttl
-    Department = var.Department
-    Billable = var.Billable
-  }
-}
-
-resource "aws_db_parameter_group" "dap-education" {
-  name   = "dap-education"
-  family = "postgres13"
-
-  parameter {
-    name  = "log_connections"
-    value = "1"
-  }
-  tags = {
-    name = "dap-rdsdbparameters"
-    owner = var.prefix
-    region = var.hashi-region
-    purpose = var.purpose
-    ttl = var.ttl
-    Department = var.Department
-    Billable = var.Billable
-  }
-}
-
-resource "aws_db_instance" "dap-education" {
-  identifier             = "dap-education"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 5
-  engine                 = "postgres"
-  engine_version       = "13.7"
-  username               = "rootedu"
-  password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.dap-edu.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  parameter_group_name   = aws_db_parameter_group.dap-education.name
-  publicly_accessible    = true
-  skip_final_snapshot    = true
 }
